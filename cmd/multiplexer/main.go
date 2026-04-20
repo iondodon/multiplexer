@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"io"
 	"log/slog"
 	"net"
 	"os"
@@ -11,14 +13,19 @@ import (
 func receiveData(conn net.Conn) {
 	defer conn.Close()
 	var reader = bufio.NewReader(conn)
-	var buffer = bytes.NewBuffer([]byte{})
+	var buffer = bytes.Buffer{}
 	for {
-		n, err := buffer.ReadFrom(reader)
-		if err != nil {
+		limitReader := io.LimitReader(reader, 1024)
+		n, err := buffer.ReadFrom(limitReader)
+		if n == 0 && err != nil {
+			if errors.Is(err, io.EOF) {
+				slog.Info("Connection closed by client")
+			}
 			slog.Error("Error reading data", "error", err)
 			break
 		}
-		slog.Info("Data received", "data", buffer.Bytes(), "bytesRead", n)
+		slog.Info("Data received", "data", buffer.String(), "bytesRead", n)
+		buffer.Reset()
 	}
 }
 

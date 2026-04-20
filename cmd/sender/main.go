@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -18,10 +19,12 @@ func main() {
 	}
 	defer connection.Close()
 
+	var counter uint64 = 0
 	for {
-		_, err := connection.Write([]byte("Hi"))
+		_, err := connection.Write([]byte(strconv.FormatUint(counter, 10)))
 		if err != nil {
 			slog.Error("Error writing bytes", "error", err.Error())
 		}
+		counter++
 	}
 }
