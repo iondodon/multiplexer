@@ -1,8 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	"encoding/binary"
 	"errors"
 	"io"
 	"log/slog"
@@ -10,29 +9,50 @@ import (
 	"os"
 )
 
+const maxFrameLength = 2048
+
 func receiveData(conn net.Conn) {
 	defer conn.Close()
-	var reader = bufio.NewReader(conn)
-	var buffer = bytes.Buffer{}
+
+	var lengthBuf = make([]byte, 8)
 	for {
-		limitReader := io.LimitReader(reader, 1024)
-		n, err := buffer.ReadFrom(limitReader)
+		n, err := io.ReadFull(conn, lengthBuf)
 		if n == 0 && err != nil {
 			if errors.Is(err, io.EOF) {
 				slog.Info("Connection closed by client")
+			} else if errors.Is(err, io.ErrUnexpectedEOF) {
+				slog.Warn("Connection closed while reading frame length")
+			} else {
+				slog.Error("Error reading frame length", "error", err)
 			}
-			slog.Error("Error reading data", "error", err)
 			break
 		}
-		slog.Info("Data received", "data", buffer.String(), "bytesRead", n)
-		buffer.Reset()
+
+		frameLength := binary.BigEndian.Uint64(lengthBuf)
+		if frameLength > maxFrameLength {
+			slog.Error("Frame length bigger than max allowed frame length")
+			break
+		}
+
+		frameBuf := make([]byte, frameLength)
+		n, err = io.ReadFull(conn, frameBuf)
+		if n == 0 && err != nil {
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+				slog.Warn("Connection closed while reading frame", "expected", frameLength, "bytesRead", n)
+			} else {
+				slog.Error("Error reading frame", "error", err, "bytesRead", n)
+			}
+			break
+		}
+
+		slog.Info("Data received", "length", frameLength, "data", string(frameBuf))
 	}
 }
 
 func main() {
 	listener, err := net.Listen("tcp", ":7070")
 	if err != nil {
-		slog.Error("Failer to create connection listener", "error", err)
+		slog.Error("Failed to create connection listener", "error", err)
 		os.Exit(1)
 	}
 	defer listener.Close()
