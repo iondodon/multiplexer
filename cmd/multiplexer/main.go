@@ -7,11 +7,17 @@ import (
 	"log/slog"
 	"net"
 	"os"
+
+	"github.com/iondodon/multiplexer/internal/queue"
 )
+
+type Pusher interface {
+	Push(data string)
+}
 
 const maxFrameLength = 2048
 
-func receiveData(conn net.Conn) {
+func receiveData(conn net.Conn, pusher Pusher) {
 	defer conn.Close()
 
 	var lengthBuf = make([]byte, 8)
@@ -46,10 +52,13 @@ func receiveData(conn net.Conn) {
 		}
 
 		slog.Info("Data received", "length", frameLength, "data", string(frameBuf))
+		pusher.Push(string(frameBuf))
 	}
 }
 
 func main() {
+	var q Pusher = queue.GetInstance()
+
 	listener, err := net.Listen("tcp", ":7070")
 	if err != nil {
 		slog.Error("Failed to create connection listener", "error", err)
@@ -62,6 +71,6 @@ func main() {
 		if err != nil {
 			slog.Error("Failed to accept connection", "error", err)
 		}
-		go receiveData(connection)
+		go receiveData(connection, q)
 	}
 }
