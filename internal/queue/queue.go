@@ -18,17 +18,20 @@ type node struct {
 
 func GetInstance() *q {
 	once.Do(func() {
-		instance = &q{}
+		instance = &q{
+			head: &node{
+				// Intentionally added the first node with empty "data"
+				// because we do not want to check if the head is nil
+				// everytime when we push into the queue.
+				data: "",
+				next: nil,
+			},
+		}
 	})
 	return instance
 }
 
 func (q q) Push(data string) {
-	if q.head == nil {
-		q.head = &node{data: data}
-		return
-	}
-
 	q.head.next = &node{data: data}
 	q.head = q.head.next
 }
