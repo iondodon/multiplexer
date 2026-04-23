@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -12,11 +13,15 @@ import (
 const maxFrameLength = 2048
 
 func main() {
-	conn, err := net.Dial("tcp", "localhost:7070")
+	ctx, cancelReceiving := context.WithCancel(context.Background())
+	defer cancelReceiving()
+	var dialer = net.Dialer{}
+	conn, err := dialer.DialContext(ctx, "tcp", "localhost:7070")
 	if err != nil {
 		slog.Error("Failed to create connection", "error", err)
 		os.Exit(1)
 	}
+	defer conn.Close()
 
 	var frameLengthBuf = make([]byte, 4)
 	for {

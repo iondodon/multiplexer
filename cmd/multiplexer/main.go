@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/iondodon/multiplexer/internal/queue"
 )
@@ -51,26 +52,51 @@ func receiveData(conn net.Conn, pusher Pusher) {
 			break
 		}
 
-		slog.Info("Data received", "length", frameLength, "data", string(frameBuf))
 		pusher.Push(string(frameBuf))
 	}
 }
 
 func main() {
-	var q Pusher = queue.GetInstance()
+	var pusher Pusher = queue.GetInstance()
 
-	listener, err := net.Listen("tcp", ":6060")
-	if err != nil {
-		slog.Error("Failed to create connection listener", "error", err)
-		os.Exit(1)
-	}
-	defer listener.Close()
+	var wg = &sync.WaitGroup{}
 
-	for {
-		connection, err := listener.Accept()
+	wg.Go(func() {
+		producerListener, err := net.Listen("tcp", ":6060")
 		if err != nil {
-			slog.Error("Failed to accept connection", "error", err)
+			slog.Error("Failed to create connection listener", "error", err)
+			os.Exit(1)
 		}
-		go receiveData(connection, q)
-	}
+		defer producerListener.Close()
+
+		for {
+			conn, err := producerListener.Accept()
+			if err != nil {
+				slog.Error("Failed to accept connection", "error", err)
+			} else {
+				go receiveData(conn, pusher)
+			}
+		}
+	})
+
+	wg.Go(func() {
+		consumerListener, err := net.Listen("tcp", ":7070")
+		if err != nil {
+			slog.Error("Failed to create connection listener", "error", err)
+			os.Exit(1)
+		}
+		defer consumerListener.Close()
+
+		for {
+			conn, err := consumerListener.Accept()
+			if err != nil {
+				slog.Error("Failed to accept connection", "error", err)
+			} else {
+				slog.Info("New connection", "connection", conn)
+			}
+		}
+	})
+
+	wg.Wait()
+
 }
