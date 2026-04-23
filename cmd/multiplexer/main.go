@@ -20,7 +20,7 @@ const maxFrameLength = 2048
 func receiveData(conn net.Conn, pusher Pusher) {
 	defer conn.Close()
 
-	var lengthBuf = make([]byte, 8)
+	var lengthBuf = make([]byte, 4)
 	for {
 		n, err := io.ReadFull(conn, lengthBuf)
 		if n == 0 && err != nil {
@@ -34,7 +34,7 @@ func receiveData(conn net.Conn, pusher Pusher) {
 			break
 		}
 
-		frameLength := binary.BigEndian.Uint64(lengthBuf)
+		frameLength := binary.BigEndian.Uint32(lengthBuf)
 		if frameLength > maxFrameLength {
 			slog.Error("Frame length bigger than max allowed frame length")
 			break
@@ -59,7 +59,7 @@ func receiveData(conn net.Conn, pusher Pusher) {
 func main() {
 	var q Pusher = queue.GetInstance()
 
-	listener, err := net.Listen("tcp", ":7070")
+	listener, err := net.Listen("tcp", ":6060")
 	if err != nil {
 		slog.Error("Failed to create connection listener", "error", err)
 		os.Exit(1)

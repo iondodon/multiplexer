@@ -28,8 +28,8 @@ func writeFull(conn net.Conn, data []byte) error {
 }
 
 func sendFrame(conn net.Conn, data []byte) error {
-	var lengthPrefixBuf = make([]byte, 8)
-	binary.BigEndian.PutUint64(lengthPrefixBuf, uint64(len(data)))
+	var lengthPrefixBuf = make([]byte, 4)
+	binary.BigEndian.PutUint32(lengthPrefixBuf, uint32(len(data)))
 	err := writeFull(conn, lengthPrefixBuf)
 	if err != nil {
 		return err
@@ -42,7 +42,7 @@ func main() {
 	ctx, cancelSending := context.WithCancel(context.Background())
 	defer cancelSending()
 	var dialer = net.Dialer{}
-	conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:7070")
+	conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:6060")
 	if err != nil {
 		slog.Error("Failed to establish connection", "error", err)
 		os.Exit(1)
