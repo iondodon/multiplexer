@@ -17,8 +17,7 @@ type pusher interface {
 }
 
 type reader interface {
-	Read() string
-	HasNext() bool
+	ReadNext() (string, bool)
 }
 
 const maxFrameLength = 2048
@@ -90,10 +89,9 @@ func sendFrame(conn net.Conn, data []byte) error {
 }
 
 func sendToConsumer(conn net.Conn, reader reader) {
-	var data string
 	for {
-		if reader.HasNext() {
-			data = reader.Read()
+		data, notEmpty := reader.ReadNext()
+		if notEmpty {
 			sendFrame(conn, []byte(data))
 		}
 	}

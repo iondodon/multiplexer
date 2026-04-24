@@ -36,19 +36,15 @@ func (q *queue) Push(data string) {
 	}
 }
 
-func (q *queue) HasNext() bool {
-	rwMutex.RLock()
-	defer rwMutex.RUnlock()
-
-	return q.head != nil
-}
-
-// HasNext must be called first. This can be "improved". But, should we?
-func (q *queue) Read() string {
+func (q *queue) ReadNext() (string, bool) {
 	rwMutex.Lock()
 	defer rwMutex.Unlock()
 
-	data := q.head.data
-	q.head = q.head.next
-	return data
+	if q.head != nil {
+		data := q.head.data
+		q.head = q.head.next
+		return data, true
+	} else {
+		return "", false
+	}
 }
