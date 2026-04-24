@@ -3,8 +3,7 @@ package queue
 import "sync"
 
 var (
-	instance *queue
-	once     *sync.Once  = &sync.Once{}
+	instance *queue      = &queue{head: nil}
 	mutex    *sync.Mutex = &sync.Mutex{}
 )
 
@@ -18,9 +17,6 @@ type node struct {
 }
 
 func GetInstance() *queue {
-	once.Do(func() {
-		instance = &queue{head: nil}
-	})
 	return instance
 }
 
