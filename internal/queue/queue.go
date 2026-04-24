@@ -4,7 +4,8 @@ import "sync"
 
 var (
 	instance *queue
-	once     sync.Once
+	once     *sync.Once    = &sync.Once{}
+	rwMutex  *sync.RWMutex = &sync.RWMutex{}
 )
 
 type queue struct {
@@ -24,6 +25,9 @@ func GetInstance() *queue {
 }
 
 func (q *queue) Push(data string) {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
+
 	if q.head == nil {
 		q.head = &node{data: data, next: nil}
 	} else {
@@ -33,11 +37,17 @@ func (q *queue) Push(data string) {
 }
 
 func (q *queue) HasNext() bool {
+	rwMutex.RLock()
+	defer rwMutex.RUnlock()
+
 	return q.head != nil
 }
 
 // HasNext must be called first. This can be "improved". But, should we?
 func (q *queue) Read() string {
+	rwMutex.Lock()
+	defer rwMutex.Unlock()
+
 	data := q.head.data
 	q.head = q.head.next
 	return data

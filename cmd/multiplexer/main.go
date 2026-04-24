@@ -91,9 +91,11 @@ func sendFrame(conn net.Conn, data []byte) error {
 
 func sendToConsumer(conn net.Conn, reader reader) {
 	var data string
-	for reader.HasNext() {
-		data = reader.Read()
-		sendFrame(conn, []byte(data))
+	for {
+		if reader.HasNext() {
+			data = reader.Read()
+			sendFrame(conn, []byte(data))
+		}
 	}
 }
 
