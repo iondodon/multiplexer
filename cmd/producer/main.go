@@ -57,6 +57,7 @@ func main() {
 			slog.Error("Error sending frame", "error", err)
 			break
 		}
+		slog.Info("Sent", "data", counter)
 		counter++
 	}
 }

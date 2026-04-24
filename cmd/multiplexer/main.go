@@ -12,13 +12,18 @@ import (
 	"github.com/iondodon/multiplexer/internal/queue"
 )
 
-type Pusher interface {
+type pusher interface {
 	Push(data string)
+}
+
+type reader interface {
+	Read() string
+	HasNext() bool
 }
 
 const maxFrameLength = 2048
 
-func receiveData(conn net.Conn, pusher Pusher) {
+func receiveData(conn net.Conn, pusher pusher) {
 	defer conn.Close()
 
 	var lengthBuf = make([]byte, 4)
@@ -56,11 +61,46 @@ func receiveData(conn net.Conn, pusher Pusher) {
 	}
 }
 
-func main() {
-	var pusher Pusher = queue.GetInstance()
+// For write there is no io.WriteFull (equivalent to the existing io.ReadFull)
+// that would guarantee that the entire message was writen.
+// The user is responsable for handling this.
+func writeFull(conn net.Conn, data []byte) error {
+	for len(data) > 0 {
+		n, err := conn.Write(data)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return io.ErrUnexpectedEOF
+		}
+		data = data[n:]
+	}
+	return nil
+}
 
+func sendFrame(conn net.Conn, data []byte) error {
+	var frameLengthBuf = make([]byte, 4)
+	binary.BigEndian.PutUint32(frameLengthBuf, uint32(len(data)))
+	err := writeFull(conn, frameLengthBuf)
+	if err != nil {
+		return err
+	}
+
+	return writeFull(conn, data)
+}
+
+func sendToConsumer(conn net.Conn, reader reader) {
+	var data string
+	for reader.HasNext() {
+		data = reader.Read()
+		sendFrame(conn, []byte(data))
+	}
+}
+
+func main() {
 	var wg = &sync.WaitGroup{}
 
+	var pusher pusher = queue.GetInstance()
 	wg.Go(func() {
 		producerListener, err := net.Listen("tcp", ":6060")
 		if err != nil {
@@ -79,6 +119,7 @@ func main() {
 		}
 	})
 
+	var reader reader = queue.GetInstance()
 	wg.Go(func() {
 		consumerListener, err := net.Listen("tcp", ":7070")
 		if err != nil {
@@ -94,6 +135,8 @@ func main() {
 			} else {
 				slog.Info("New connection", "connection", conn)
 			}
+
+			go sendToConsumer(conn, reader)
 		}
 	})
 

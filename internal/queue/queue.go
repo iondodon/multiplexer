@@ -3,11 +3,11 @@ package queue
 import "sync"
 
 var (
-	instance *q
+	instance *queue
 	once     sync.Once
 )
 
-type q struct {
+type queue struct {
 	head *node
 }
 
@@ -16,22 +16,29 @@ type node struct {
 	next *node
 }
 
-func GetInstance() *q {
+func GetInstance() *queue {
 	once.Do(func() {
-		instance = &q{
-			head: &node{
-				// Intentionally added the first node with empty "data"
-				// because we do not want to check if the head is nil
-				// everytime when we push into the queue.
-				data: "",
-				next: nil,
-			},
-		}
+		instance = &queue{head: nil}
 	})
 	return instance
 }
 
-func (q q) Push(data string) {
-	q.head.next = &node{data: data}
+func (q *queue) Push(data string) {
+	if q.head == nil {
+		q.head = &node{data: data, next: nil}
+	} else {
+		q.head.next = &node{data: data, next: nil}
+		q.head = q.head.next
+	}
+}
+
+func (q *queue) HasNext() bool {
+	return q.head != nil
+}
+
+// HasNext must be called first. This can be "improved". But, should we?
+func (q *queue) Read() string {
+	data := q.head.data
 	q.head = q.head.next
+	return data
 }
