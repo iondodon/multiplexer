@@ -56,6 +56,7 @@ func receiveData(conn net.Conn, pusher pusher) {
 			break
 		}
 
+		// slog.Info("Received from producer", "data", string(frameBuf))
 		pusher.Push(string(frameBuf))
 	}
 }
@@ -92,6 +93,7 @@ func sendToConsumer(conn net.Conn, reader reader) {
 	for {
 		data, notEmpty := reader.ReadNext()
 		if notEmpty {
+			// slog.Info("Sending to", "conn", conn.RemoteAddr(), "data", data)
 			sendFrame(conn, []byte(data))
 		}
 	}

@@ -4,8 +4,8 @@ import "sync"
 
 var (
 	instance *queue
-	once     *sync.Once    = &sync.Once{}
-	rwMutex  *sync.RWMutex = &sync.RWMutex{}
+	once     *sync.Once  = &sync.Once{}
+	mutex    *sync.Mutex = &sync.Mutex{}
 )
 
 type queue struct {
@@ -25,8 +25,8 @@ func GetInstance() *queue {
 }
 
 func (q *queue) Push(data string) {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if q.head == nil {
 		q.head = &node{data: data, next: nil}
@@ -37,8 +37,8 @@ func (q *queue) Push(data string) {
 }
 
 func (q *queue) ReadNext() (string, bool) {
-	rwMutex.Lock()
-	defer rwMutex.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if q.head != nil {
 		data := q.head.data
