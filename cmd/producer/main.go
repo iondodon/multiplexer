@@ -34,11 +34,9 @@ func writeFull(conn net.Conn, data []byte) error {
 func sendFrame(conn net.Conn, data []byte) error {
 	var lengthPrefixBuf = make([]byte, 4)
 	binary.BigEndian.PutUint32(lengthPrefixBuf, uint32(len(data)))
-	err := writeFull(conn, lengthPrefixBuf)
-	if err != nil {
+	if err := writeFull(conn, lengthPrefixBuf); err != nil {
 		return err
 	}
-
 	return writeFull(conn, data)
 }
 
