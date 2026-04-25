@@ -3,12 +3,16 @@ package main
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
 	"os"
 	"strconv"
+	"syscall"
 )
+
+var counter uint64 = 0
 
 // For write there is no io.WriteFull (equivalent to the existing io.ReadFull)
 // that would guarantee that the entire message was writen.
@@ -49,12 +53,26 @@ func main() {
 	}
 	defer conn.Close()
 
-	var counter uint64 = 0
 	for {
 		frameData := []byte(strconv.FormatUint(counter, 10))
 		err := sendFrame(conn, frameData)
 		if err != nil {
+			if errors.Is(err, syscall.ECONNRESET) {
+				slog.Info("peer reset connection")
+			}
+
+			if errors.Is(err, syscall.EPIPE) {
+				slog.Info("broken pipe / closed connection")
+			}
+
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				slog.Info("network timeout")
+			}
+
 			slog.Error("Error sending frame", "error", err)
+			conn.Close()
+
 			break
 		}
 		slog.Info("Sent", "data", counter)

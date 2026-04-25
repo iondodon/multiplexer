@@ -56,7 +56,7 @@ func receiveData(conn net.Conn, pusher pusher) {
 			break
 		}
 
-		// slog.Info("Received from producer", "data", string(frameBuf))
+		slog.Info("Received from producer", "data", string(frameBuf))
 		pusher.Push(string(frameBuf))
 	}
 }
