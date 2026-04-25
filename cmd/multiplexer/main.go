@@ -12,17 +12,9 @@ import (
 	"github.com/iondodon/multiplexer/internal/queue"
 )
 
-type pusher interface {
-	Push(data string)
-}
-
-type reader interface {
-	ReadNext() (string, bool)
-}
-
 const maxFrameLength = 2048
 
-func receiveData(conn net.Conn, pusher pusher) {
+func receiveData(conn net.Conn) {
 	defer conn.Close()
 
 	var lengthBuf = make([]byte, 4)
@@ -57,7 +49,7 @@ func receiveData(conn net.Conn, pusher pusher) {
 		}
 
 		// slog.Info("Received from producer", "data", string(frameBuf))
-		pusher.Push(string(frameBuf))
+		queue.Push(string(frameBuf))
 	}
 }
 
@@ -89,12 +81,13 @@ func sendFrame(conn net.Conn, data []byte) error {
 	return writeFull(conn, data)
 }
 
-func sendToConsumer(conn net.Conn, reader reader) {
+func sendToConsumer(conn net.Conn, reader *queue.Node) {
 	for {
-		data, notEmpty := reader.ReadNext()
+		data, notEmpty, next := reader.ReadNext()
 		if notEmpty {
 			// slog.Info("Sending to", "conn", conn.RemoteAddr(), "data", data)
 			sendFrame(conn, []byte(data))
+			reader = next
 		}
 	}
 }
@@ -102,7 +95,6 @@ func sendToConsumer(conn net.Conn, reader reader) {
 func main() {
 	var wg = &sync.WaitGroup{}
 
-	var pusher pusher = queue.GetInstance()
 	wg.Go(func() {
 		producerListener, err := net.Listen("tcp", ":6060")
 		if err != nil {
@@ -116,12 +108,11 @@ func main() {
 			if err != nil {
 				slog.Error("Failed to accept connection", "error", err)
 			} else {
-				go receiveData(conn, pusher)
+				go receiveData(conn)
 			}
 		}
 	})
 
-	var reader reader = queue.GetInstance()
 	wg.Go(func() {
 		consumerListener, err := net.Listen("tcp", ":7070")
 		if err != nil {
@@ -138,6 +129,7 @@ func main() {
 				slog.Info("New connection", "connection", conn)
 			}
 
+			var reader = queue.GetReader()
 			go sendToConsumer(conn, reader)
 		}
 	})

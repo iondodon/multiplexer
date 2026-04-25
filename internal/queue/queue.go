@@ -6,48 +6,43 @@ import (
 )
 
 var (
-	statingNode *node  = &node{}
-	instance    *queue = &queue{
-		head: statingNode,
-		tail: statingNode,
-	}
-	mutex *sync.Mutex = &sync.Mutex{}
+	statingNode   *Node       = &Node{}
+	head          *Node       = statingNode
+	startingPoint *Node       = statingNode
+	mutex         *sync.Mutex = &sync.Mutex{}
 )
 
-type queue struct {
-	head *node
-	tail *node
-}
-
-type node struct {
+type Node struct {
 	data string
-	next *node
+	next *Node
 }
 
-func GetInstance() *queue {
-	return instance
+func GetReader() *Node {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return startingPoint
 }
 
-func (q *queue) Push(data string) {
+func Push(data string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	slog.Info("Pushed", "data", data)
-	q.head.next = &node{data: data, next: nil}
-	q.head = q.head.next
+	head.next = &Node{data: data, next: nil}
+	startingPoint = head
+	head = head.next
 }
 
-func (q *queue) ReadNext() (string, bool) {
+func (n *Node) ReadNext() (string, bool, *Node) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if q.tail != q.head {
-		data := q.tail.data
+	if n != head {
+		data := n.data
 		slog.Info("Read", "data", data)
-		q.tail = q.tail.next
-		return data, true
+		return data, true, n.next
 	} else {
 		slog.Info("Should wait")
-		return "", false
+		return "", false, nil
 	}
 }
