@@ -9,6 +9,7 @@ import (
 	"os"
 	"sync"
 
+	tcp "github.com/iondodon/multiplexer/internal"
 	"github.com/iondodon/multiplexer/internal/queue"
 )
 
@@ -52,39 +53,11 @@ func receiveData(conn net.Conn) {
 	}
 }
 
-// For write there is no io.WriteFull (equivalent to the existing io.ReadFull)
-// that would guarantee that the entire message was writen.
-// The user is responsable for handling this.
-func writeFull(conn net.Conn, data []byte) error {
-	for len(data) > 0 {
-		n, err := conn.Write(data)
-		if err != nil {
-			return err
-		}
-		if n == 0 {
-			return io.ErrUnexpectedEOF
-		}
-		data = data[n:]
-	}
-	return nil
-}
-
-func sendFrame(conn net.Conn, data []byte) error {
-	var frameLengthBuf = make([]byte, 4)
-	binary.BigEndian.PutUint32(frameLengthBuf, uint32(len(data)))
-	err := writeFull(conn, frameLengthBuf)
-	if err != nil {
-		return err
-	}
-
-	return writeFull(conn, data)
-}
-
 func sendToConsumer(conn net.Conn, reader *queue.Node) {
 	for {
 		data, next := reader.ReadNext()
 		if next != nil {
-			sendFrame(conn, []byte(data))
+			tcp.SendFrame(conn, []byte(data))
 			reader = next
 		}
 	}

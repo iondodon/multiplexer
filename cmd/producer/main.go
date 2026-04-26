@@ -2,43 +2,17 @@ package main
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
-	"io"
 	"log/slog"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
+
+	tcp "github.com/iondodon/multiplexer/internal"
 )
 
 var counter uint64 = 0
-
-// For write there is no io.WriteFull (equivalent to the existing io.ReadFull)
-// that would guarantee that the entire message was writen.
-// The user is responsable for handling this.
-func writeFull(conn net.Conn, data []byte) error {
-	for len(data) > 0 {
-		n, err := conn.Write(data)
-		if err != nil {
-			return err
-		}
-		if n == 0 {
-			return io.ErrUnexpectedEOF
-		}
-		data = data[n:]
-	}
-	return nil
-}
-
-func sendFrame(conn net.Conn, data []byte) error {
-	var lengthPrefixBuf = make([]byte, 4)
-	binary.BigEndian.PutUint32(lengthPrefixBuf, uint32(len(data)))
-	if err := writeFull(conn, lengthPrefixBuf); err != nil {
-		return err
-	}
-	return writeFull(conn, data)
-}
 
 func main() {
 	ctx, cancelSending := context.WithCancel(context.Background())
@@ -53,7 +27,7 @@ func main() {
 
 	for {
 		frameData := []byte(strconv.FormatUint(counter, 10))
-		err := sendFrame(conn, frameData)
+		err := tcp.SendFrame(conn, frameData)
 		if err != nil {
 			if errors.Is(err, syscall.ECONNRESET) {
 				slog.Info("peer reset connection")
