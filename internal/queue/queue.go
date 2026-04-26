@@ -28,7 +28,7 @@ func Push(data string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	slog.Info("Pushed", "data", data)
+	slog.Info("pushed", "data", data)
 	head.next = &Node{data: data, next: nil}
 	startingPoint = head
 	head = head.next
@@ -40,10 +40,10 @@ func (n *Node) ReadNext() (string, *Node) {
 
 	if n != head {
 		data := n.data
-		slog.Info("Read", "data", data)
+		slog.Info("read", "data", data)
 		return data, n.next
 	} else {
-		slog.Info("Should wait")
+		slog.Info("should wait")
 		return "", nil
 	}
 }

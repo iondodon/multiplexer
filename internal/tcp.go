@@ -16,18 +16,18 @@ func ReadNextFrame(conn net.Conn) ([]byte, error) {
 	n, err := io.ReadFull(conn, lengthBuf)
 	if n == 0 && err != nil {
 		if errors.Is(err, io.EOF) {
-			slog.Info("Connection closed by client")
+			slog.Info("connection closed by client")
 		} else if errors.Is(err, io.ErrUnexpectedEOF) {
-			slog.Warn("Connection closed while reading frame length")
+			slog.Warn("connection closed while reading frame length")
 		} else {
-			slog.Error("Error reading frame length", "error", err)
+			slog.Error("error reading frame length", "error", err)
 		}
 		return nil, err
 	}
 
 	frameLength := binary.BigEndian.Uint32(lengthBuf)
 	if frameLength > maxFrameLength {
-		slog.Error("Frame length bigger than max allowed frame length")
+		slog.Error("frame length bigger than max allowed frame length")
 		return nil, errors.New("Frame length bigger than max allowed frame lengt")
 	}
 
@@ -35,9 +35,9 @@ func ReadNextFrame(conn net.Conn) ([]byte, error) {
 	n, err = io.ReadFull(conn, frameBuf)
 	if n == 0 && err != nil {
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			slog.Warn("Connection closed while reading frame", "expected", frameLength, "bytesRead", n)
+			slog.Warn("connection closed while reading frame", "expected", frameLength, "bytesRead", n)
 		} else {
-			slog.Error("Error reading frame", "error", err, "bytesRead", n)
+			slog.Error("error reading frame", "error", err, "bytesRead", n)
 		}
 		return nil, err
 	}

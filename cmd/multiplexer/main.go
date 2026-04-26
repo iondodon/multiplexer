@@ -16,7 +16,7 @@ func main() {
 	wg.Go(func() {
 		producerListener, err := net.Listen("tcp", ":6060")
 		if err != nil {
-			slog.Error("Failed to create connection listener", "error", err)
+			slog.Error("failed to create connection listener", "error", err)
 			os.Exit(1)
 		}
 		defer producerListener.Close()
@@ -24,7 +24,7 @@ func main() {
 		for {
 			conn, err := producerListener.Accept()
 			if err != nil {
-				slog.Error("Failed to accept connection", "error", err)
+				slog.Error("failed to accept connection", "error", err)
 			} else {
 				go ingestStream(conn)
 			}
@@ -34,7 +34,7 @@ func main() {
 	wg.Go(func() {
 		consumerListener, err := net.Listen("tcp", ":7070")
 		if err != nil {
-			slog.Error("Failed to create connection listener", "error", err)
+			slog.Error("failed to create connection listener", "error", err)
 			os.Exit(1)
 		}
 		defer consumerListener.Close()
@@ -42,9 +42,9 @@ func main() {
 		for {
 			conn, err := consumerListener.Accept()
 			if err != nil {
-				slog.Error("Failed to accept connection", "error", err)
+				slog.Error("failed to accept connection", "error", err)
 			} else {
-				slog.Info("New connection", "connection", conn)
+				slog.Info("new connection", "connection", conn)
 			}
 
 			var reader = queue.GetReader()

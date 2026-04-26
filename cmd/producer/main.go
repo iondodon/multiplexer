@@ -18,7 +18,7 @@ func main() {
 	var dialer = net.Dialer{}
 	conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:6060")
 	if err != nil {
-		slog.Error("Failed to establish connection", "error", err)
+		slog.Error("failed to establish connection", "error", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -27,10 +27,10 @@ func main() {
 		frameData := []byte(strconv.FormatUint(counter, 10))
 		err := tcp.SendFrame(conn, frameData)
 		if err != nil {
-			slog.Error("Error sending frame", "error", err)
+			slog.Error("error sending frame", "error", err)
 			break
 		}
-		slog.Info("Sent", "data", counter)
+		slog.Info("sent", "data", counter)
 		counter++
 	}
 }
