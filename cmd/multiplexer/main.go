@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	tcp "github.com/iondodon/multiplexer/internal"
 	"github.com/iondodon/multiplexer/internal/queue"
+	"github.com/iondodon/multiplexer/internal/tcp"
 )
 
 func main() {

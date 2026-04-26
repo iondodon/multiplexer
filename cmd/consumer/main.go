@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 
-	tcp "github.com/iondodon/multiplexer/internal"
+	"github.com/iondodon/multiplexer/internal/tcp"
 )
 
 func main() {

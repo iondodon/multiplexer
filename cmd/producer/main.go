@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	tcp "github.com/iondodon/multiplexer/internal"
+	"github.com/iondodon/multiplexer/internal/tcp"
 )
 
 var counter uint64 = 0
