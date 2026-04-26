@@ -43,7 +43,6 @@ func main() {
 			}
 
 			slog.Error("Error sending frame", "error", err)
-			conn.Close()
 
 			break
 		}

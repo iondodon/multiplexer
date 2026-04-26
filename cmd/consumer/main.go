@@ -2,15 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/binary"
-	"errors"
-	"io"
 	"log/slog"
 	"net"
 	"os"
-)
 
-const maxFrameLength = 2048
+	tcp "github.com/iondodon/multiplexer/internal"
+)
 
 func main() {
 	ctx, cancelReceiving := context.WithCancel(context.Background())
@@ -23,40 +20,11 @@ func main() {
 	}
 	defer conn.Close()
 
-	var frameLengthBuf = make([]byte, 4)
 	for {
-		n, err := io.ReadFull(conn, frameLengthBuf)
-		if n == 0 && err != nil {
-			if errors.Is(err, io.EOF) {
-				slog.Info("Connection closed by client")
-			} else if errors.Is(err, io.ErrUnexpectedEOF) {
-				slog.Warn("Connection closed while reading frame length")
-			} else {
-				slog.Error("Failed to read length prefix")
-			}
-			break
-		}
-
-		frameLength := binary.BigEndian.Uint32(frameLengthBuf)
-		if frameLength > maxFrameLength {
-			slog.Error("Frame length bigger than max allowed frame length")
-			break
-		}
-
-		frameBuf := make([]byte, frameLength)
-		n, err = io.ReadFull(conn, frameBuf)
+		data, err := tcp.Receive(conn)
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				slog.Info("Connection cloed by client")
-			} else if errors.Is(err, io.ErrUnexpectedEOF) {
-				slog.Warn("Connection closed while reading frame length")
-			} else {
-				slog.Error("Failed to read frame", "error", err)
-			}
 			break
 		}
-
-		slog.Info("Received", "frame", string(frameBuf))
+		slog.Info("Received", "frame", string(data))
 	}
-
 }
