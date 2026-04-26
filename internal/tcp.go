@@ -10,7 +10,7 @@ import (
 
 const maxFrameLength = 2048
 
-func Receive(conn net.Conn) ([]byte, error) {
+func ReadNextFrame(conn net.Conn) ([]byte, error) {
 	var lengthBuf = make([]byte, 4)
 	n, err := io.ReadFull(conn, lengthBuf)
 	if n == 0 && err != nil {

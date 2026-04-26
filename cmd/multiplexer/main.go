@@ -13,7 +13,7 @@ import (
 func receiveData(conn net.Conn) {
 	defer conn.Close()
 	for {
-		data, err := tcp.Receive(conn)
+		data, err := tcp.ReadNextFrame(conn)
 		if err != nil {
 			break
 		}
