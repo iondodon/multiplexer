@@ -6,10 +6,11 @@ import (
 )
 
 var (
-	statingNode   *Node       = &Node{}
-	head          *Node       = statingNode
-	startingPoint *Node       = statingNode
-	mutex         *sync.Mutex = &sync.Mutex{}
+	statingNode *Node = &Node{}
+	head        *Node = statingNode
+	// The starting point should always be one step behind the head.
+	startingPoint *Node         = statingNode
+	mutex         *sync.RWMutex = &sync.RWMutex{}
 )
 
 type Node struct {
@@ -18,8 +19,8 @@ type Node struct {
 }
 
 func GetReader() *Node {
-	mutex.Lock()
-	defer mutex.Unlock()
+	mutex.RLock()
+	defer mutex.RUnlock()
 	return startingPoint
 }
 
@@ -33,16 +34,16 @@ func Push(data string) {
 	head = head.next
 }
 
-func (n *Node) ReadNext() (string, bool, *Node) {
+func (n *Node) ReadNext() (string, *Node) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	if n != head {
 		data := n.data
 		slog.Info("Read", "data", data)
-		return data, true, n.next
+		return data, n.next
 	} else {
 		slog.Info("Should wait")
-		return "", false, nil
+		return "", nil
 	}
 }

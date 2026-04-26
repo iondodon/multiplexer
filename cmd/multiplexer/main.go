@@ -48,7 +48,6 @@ func receiveData(conn net.Conn) {
 			break
 		}
 
-		// slog.Info("Received from producer", "data", string(frameBuf))
 		queue.Push(string(frameBuf))
 	}
 }
@@ -83,9 +82,8 @@ func sendFrame(conn net.Conn, data []byte) error {
 
 func sendToConsumer(conn net.Conn, reader *queue.Node) {
 	for {
-		data, notEmpty, next := reader.ReadNext()
-		if notEmpty {
-			// slog.Info("Sending to", "conn", conn.RemoteAddr(), "data", data)
+		data, next := reader.ReadNext()
+		if next != nil {
 			sendFrame(conn, []byte(data))
 			reader = next
 		}
