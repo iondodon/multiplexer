@@ -10,27 +10,6 @@ import (
 	"github.com/iondodon/multiplexer/internal/queue"
 )
 
-func receiveData(conn net.Conn) {
-	defer conn.Close()
-	for {
-		data, err := tcp.ReadNextFrame(conn)
-		if err != nil {
-			break
-		}
-		queue.Push(string(data))
-	}
-}
-
-func serveConsumer(conn net.Conn, reader *queue.Node) {
-	for {
-		data, next := reader.ReadNext()
-		if next != nil {
-			tcp.SendFrame(conn, []byte(data))
-			reader = next
-		}
-	}
-}
-
 func main() {
 	var wg = &sync.WaitGroup{}
 
@@ -47,7 +26,7 @@ func main() {
 			if err != nil {
 				slog.Error("Failed to accept connection", "error", err)
 			} else {
-				go receiveData(conn)
+				go ingestStream(conn)
 			}
 		}
 	})
@@ -75,4 +54,25 @@ func main() {
 
 	wg.Wait()
 
+}
+
+func ingestStream(conn net.Conn) {
+	defer conn.Close()
+	for {
+		data, err := tcp.ReadNextFrame(conn)
+		if err != nil {
+			break
+		}
+		queue.Push(string(data))
+	}
+}
+
+func serveConsumer(conn net.Conn, queueCursor *queue.Node) {
+	for {
+		data, next := queueCursor.ReadNext()
+		if next != nil {
+			tcp.SendFrame(conn, []byte(data))
+			queueCursor = next
+		}
+	}
 }

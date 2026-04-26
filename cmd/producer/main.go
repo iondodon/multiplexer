@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net"
 	"os"
 	"strconv"
-	"syscall"
 
 	tcp "github.com/iondodon/multiplexer/internal"
 )
@@ -29,21 +27,7 @@ func main() {
 		frameData := []byte(strconv.FormatUint(counter, 10))
 		err := tcp.SendFrame(conn, frameData)
 		if err != nil {
-			if errors.Is(err, syscall.ECONNRESET) {
-				slog.Info("peer reset connection")
-			}
-
-			if errors.Is(err, syscall.EPIPE) {
-				slog.Info("broken pipe / closed connection")
-			}
-
-			var netErr net.Error
-			if errors.As(err, &netErr) && netErr.Timeout() {
-				slog.Info("network timeout")
-			}
-
 			slog.Error("Error sending frame", "error", err)
-
 			break
 		}
 		slog.Info("Sent", "data", counter)
