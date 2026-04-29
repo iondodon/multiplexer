@@ -21,7 +21,7 @@ func main() {
 	defer conn.Close()
 
 	for {
-		data, err := tcp.ReadNextFrame(conn)
+		data, err := tcp.ReceiveNextFrame(conn)
 		if err != nil {
 			break
 		}
