@@ -9,7 +9,7 @@ var (
 	statingNode *Node = &Node{}
 	head        *Node = statingNode
 	// The starting point should always be one step behind the head.
-	startingPoint *Node         = statingNode
+	startingPoint *Node         = head
 	mutex         *sync.RWMutex = &sync.RWMutex{}
 )
 
