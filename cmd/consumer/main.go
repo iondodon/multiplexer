@@ -39,7 +39,7 @@ func main() {
 			break
 		}
 		if shouldBe > 0 && number != shouldBe {
-			slog.Error("HOPA", "number", number, "shouldBe", shouldBe)
+			slog.Error("Error", "number", number, "shouldBe", shouldBe)
 			break
 		}
 		shouldBe = number + 1

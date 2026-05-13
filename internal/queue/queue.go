@@ -6,11 +6,9 @@ import (
 )
 
 var (
-	statingNode *Node = &Node{}
-	head        *Node = statingNode
-	// The starting point should always be one step behind the head.
-	startingPoint *Node         = head
-	mutex         *sync.RWMutex = &sync.RWMutex{}
+	head  *Node      = nil
+	mutex sync.Mutex = sync.Mutex{}
+	cond  *sync.Cond = sync.NewCond(&mutex)
 )
 
 type Node struct {
@@ -18,32 +16,38 @@ type Node struct {
 	next *Node
 }
 
-func GetReader() *Node {
-	mutex.RLock()
-	defer mutex.RUnlock()
-	return startingPoint
+func GetDedicatedReader() *Node {
+	mutex.Lock()
+	defer mutex.Unlock()
+	for head == nil {
+		cond.Wait()
+	}
+	return head
 }
 
 func Push(data string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
+	if head == nil {
+		head = &Node{data: data, next: nil}
+	} else {
+		head.next = &Node{data: data, next: nil}
+		head = head.next
+	}
+	cond.Broadcast()
 	slog.Info("pushed", "data", data)
-	head.next = &Node{data: data, next: nil}
-	startingPoint = head
-	head = head.next
 }
 
-func (n *Node) ReadNext() (string, *Node) {
+func (n *Node) Read() (string, *Node) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if n != head {
-		data := n.data
-		slog.Info("read", "data", data)
-		return data, n.next
-	} else {
-		slog.Info("should wait")
-		return "", nil
+	for n == head {
+		cond.Wait()
 	}
+
+	data := n.data
+	slog.Info("read", "data", data)
+	return data, n.next
 }
