@@ -12,7 +12,7 @@ var (
 )
 
 type Node struct {
-	data string
+	data []byte
 	next *Node
 }
 
@@ -25,7 +25,7 @@ func GetDedicatedReader() *Node {
 	return head
 }
 
-func Push(data string) {
+func Push(data []byte) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -39,7 +39,7 @@ func Push(data string) {
 	slog.Info("pushed", "data", data)
 }
 
-func (n *Node) Read() (string, *Node) {
+func (n *Node) Read() ([]byte, *Node) {
 	mutex.Lock()
 	defer mutex.Unlock()
 

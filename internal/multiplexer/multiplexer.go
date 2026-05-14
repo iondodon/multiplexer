@@ -122,7 +122,7 @@ func (m multiplexer) ingestStream(conn net.Conn) {
 			if err != nil {
 				break
 			}
-			queue.Push(string(data))
+			queue.Push(data)
 		}
 	})
 }
